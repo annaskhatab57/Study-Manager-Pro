@@ -1,0 +1,345 @@
+# Study Manager Pro - Prisma Schema Specification
+
+This document details the Prisma schema representation of the relational PostgreSQL database schema.
+
+---
+
+## 1. Custom Types & Enums
+
+```prisma
+enum Role {
+  OWNER
+  MEMBER
+  VIEWER
+}
+
+enum Visibility {
+  PRIVATE
+  TEAM
+}
+
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum SessionType {
+  FOCUS
+  SHORT_BREAK
+  LONG_BREAK
+}
+
+enum Theme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+```
+
+---
+
+## 2. Complete schema.prisma File
+
+Save this content inside `server/prisma/schema.prisma` when initialization begins.
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String           @id @default(uuid()) @db.Uuid
+  fullName        String           @map("full_name") @db.VarChar(100)
+  username        String           @unique @db.VarChar(50)
+  email           String           @unique @db.VarChar(255)
+  passwordHash    String           @map("password_hash")
+  avatarUrl       String?          @map("avatar_url")
+  bio             String?
+  university      String?          @db.VarChar(150)
+  department      String?          @db.VarChar(150)
+  semester        String?          @db.VarChar(50)
+  isVerified      Boolean          @default(false) @map("is_verified")
+  lastLogin       DateTime?        @map("last_login")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  ownedProjects   Project[]        @relation("ProjectOwner")
+  memberships     ProjectMember[]
+  assignedTasks   Task[]           @relation("TaskAssignee")
+  createdTasks    Task[]           @relation("TaskCreator")
+  sentInvites     Invitation[]     @relation("InviteSender")
+  receivedInvites Invitation[]     @relation("InviteReceiver")
+  comments        TaskComment[]
+  attachments     TaskAttachment[]
+  messages        Message[]
+  files           ProjectFile[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  studySessions   StudySession[]
+  settings        UserSettings?
+
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Project {
+  id          String        @id @default(uuid()) @db.Uuid
+  ownerId     String        @map("owner_id") @db.Uuid
+  name        String        @db.VarChar(150)
+  description String?
+  category    String?       @db.VarChar(100)
+  visibility  Visibility    @default(TEAM)
+  status      ProjectStatus @default(ACTIVE)
+  startDate   DateTime?     @map("start_date") @db.Date
+  deadline    DateTime?     @db.Date
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+
+  // Relations
+  owner        User            @relation("ProjectOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members      ProjectMember[]
+  tasks        Task[]
+  invitations  Invitation[]
+  messages     Message[]
+  files        ProjectFile[]
+  activityLogs ActivityLog[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([deadline])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  role      Role
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_members")
+}
+
+model Invitation {
+  id         String           @id @default(uuid()) @db.Uuid
+  projectId  String           @map("project_id") @db.Uuid
+  senderId   String           @map("sender_id") @db.Uuid
+  receiverId String           @map("receiver_id") @db.Uuid
+  status     InvitationStatus @default(PENDING)
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  // Relations
+  project  Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender   User    @relation("InviteSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User    @relation("InviteReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([receiverId])
+  @@index([projectId])
+  @@map("invitations")
+}
+
+model Task {
+  id             String     @id @default(uuid()) @db.Uuid
+  projectId      String     @map("project_id") @db.Uuid
+  assignedTo     String?    @map("assigned_to") @db.Uuid
+  createdBy      String     @map("created_by") @db.Uuid
+  title          String     @db.VarChar(200)
+  description    String?
+  priority       Priority   @default(MEDIUM)
+  status         TaskStatus @default(NOT_STARTED)
+  estimatedHours Int?       @map("estimated_hours")
+  actualHours    Int?       @map("actual_hours")
+  dueDate        DateTime?  @map("due_date")
+  completedAt    DateTime?  @map("completed_at")
+  createdAt      DateTime   @default(now()) @map("created_at")
+  updatedAt      DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignee    User?            @relation("TaskAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
+  creator     User             @relation("TaskCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  comments    TaskComment[]
+  attachments TaskAttachment[]
+
+  @@index([projectId])
+  @@index([assignedTo])
+  @@index([status])
+  @@index([dueDate])
+  @@map("tasks")
+}
+
+model TaskComment {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@map("task_comments")
+}
+
+model TaskAttachment {
+  id         String   @id @default(uuid()) @db.Uuid
+  taskId     String   @map("task_id") @db.Uuid
+  uploadedBy String   @map("uploaded_by") @db.Uuid
+  fileName   String?  @map("file_name") @db.VarChar(255)
+  fileUrl    String?  @map("file_url")
+  fileSize   BigInt?  @map("file_size")
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@map("task_attachments")
+}
+
+model Message {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  senderId  String   @map("sender_id") @db.Uuid
+  content   String
+  edited    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender  User    @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+model ProjectFile {
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String   @map("project_id") @db.Uuid
+  uploadedBy String   @map("uploaded_by") @db.Uuid
+  fileName   String?  @map("file_name") @db.VarChar(255)
+  fileUrl    String?  @map("file_url")
+  fileSize   BigInt?  @map("file_size")
+  mimeType   String?  @map("mime_type") @db.VarChar(100)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("project_files")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  title     String?  @db.VarChar(255)
+  message   String?
+  type      String?  @db.VarChar(50)
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  projectId  String   @map("project_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  action     String?  @db.VarChar(100)
+  entityType String?  @map("entity_type") @db.VarChar(50)
+  entityId   String?  @map("entity_id") @db.Uuid
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@index([createdAt])
+  @@map("activity_logs")
+}
+
+model StudySession {
+  id              String      @id @default(uuid()) @db.Uuid
+  userId          String      @map("user_id") @db.Uuid
+  durationMinutes Int         @map("duration_minutes")
+  sessionType     SessionType @map("session_type")
+  startedAt       DateTime?   @map("started_at")
+  endedAt         DateTime?   @map("ended_at")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([startedAt])
+  @@map("study_sessions")
+}
+
+model UserSettings {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @unique @map("user_id") @db.Uuid
+  theme              Theme?
+  timezone           String?  @db.VarChar(100)
+  emailNotifications Boolean  @default(true) @map("email_notifications")
+  pushNotifications  Boolean  @default(true) @map("push_notifications")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+```
