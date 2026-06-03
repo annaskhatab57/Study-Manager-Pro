@@ -119,7 +119,8 @@ export default function Home() {
 
     setLoading(true);
 
-    const baseUrl = 'http://localhost:5000/api/v1/auth';
+    const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://study-manager-pro.onrender.com').replace(/\/$/, '');
+    const baseUrl = `${API_BASE_URL}/api/v1/auth`;
     const endpoint = isLogin ? `${baseUrl}/login` : `${baseUrl}/register`;
     const payload = isLogin 
       ? { emailOrUsername: email, password }

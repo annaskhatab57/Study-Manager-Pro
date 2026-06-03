@@ -12,7 +12,9 @@ import {
   FileUp, Download, ChevronRight, File, Filter, Loader2, Award
 } from 'lucide-react';
 
-const socket = io('http://localhost:5000', {
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'https://study-manager-pro.onrender.com').replace(/\/$/, '');
+
+const socket = io(API_BASE_URL, {
   autoConnect: false
 });
 
@@ -141,7 +143,7 @@ export default function Dashboard() {
 
       // Fetch messages history
       const token = localStorage.getItem('token');
-      fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/messages`, {
+      fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/messages`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
       .then(res => res.json())
@@ -226,7 +228,7 @@ export default function Dashboard() {
 
   const fetchProfile = async (token: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/me', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -252,7 +254,7 @@ export default function Dashboard() {
 
   const fetchProjects = async (token: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/v1/projects', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -268,7 +270,7 @@ export default function Dashboard() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${projectId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${projectId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -284,7 +286,7 @@ export default function Dashboard() {
 
   const fetchPendingInvites = async (token: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/v1/invites/pending', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/invites/pending`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -298,7 +300,7 @@ export default function Dashboard() {
 
   const fetchStudyStats = async (token: string) => {
     try {
-      const res = await fetch('http://localhost:5000/api/v1/study/stats', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/study/stats`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -317,7 +319,7 @@ export default function Dashboard() {
     setGlobalTasksLoading(true);
     try {
       const fetchPromises = projects.map(p => 
-        fetch(`http://localhost:5000/api/v1/projects/${p.id}`, {
+        fetch(`${API_BASE_URL}/api/v1/projects/${p.id}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }).then(res => res.json())
       );
@@ -346,7 +348,7 @@ export default function Dashboard() {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${projectId}/files`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${projectId}/files`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const data = await res.json();
@@ -370,7 +372,7 @@ export default function Dashboard() {
 
     setFileUploadLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/files`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/files`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -400,7 +402,7 @@ export default function Dashboard() {
     if (!confirm('Are you sure you want to permanently delete this file?')) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/files/${fileId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/files/${fileId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -433,7 +435,7 @@ export default function Dashboard() {
 
     setSavingProfile(true);
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/profile', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -469,7 +471,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/v1/projects', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -510,7 +512,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/invites`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/invites`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -537,7 +539,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/invites/${inviteId}/respond`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/invites/${inviteId}/respond`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -565,7 +567,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/members/${targetUserId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/members/${targetUserId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -587,7 +589,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/members/${targetUserId}/role`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/members/${targetUserId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -615,7 +617,7 @@ export default function Dashboard() {
     if (!confirm('Are you absolutely sure you want to permanently delete this project?')) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -642,7 +644,7 @@ export default function Dashboard() {
     setMessageInput('');
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${selectedProject.id}/messages`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${selectedProject.id}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -667,7 +669,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/v1/projects/' + selectedProject.id + '/tasks', {
+      const res = await fetch(API_BASE_URL + '/api/v1/projects/' + selectedProject.id + '/tasks', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -709,7 +711,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${targetProjId}/tasks/${taskId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${targetProjId}/tasks/${taskId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -743,7 +745,7 @@ export default function Dashboard() {
     if (!confirm('Are you sure you want to delete this task?')) return;
 
     try {
-      const res = await fetch(`http://localhost:5000/api/v1/projects/${targetProjId}/tasks/${taskId}`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/projects/${targetProjId}/tasks/${taskId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -769,7 +771,7 @@ export default function Dashboard() {
     if (!token) return;
 
     try {
-      const res = await fetch('http://localhost:5000/api/v1/study', {
+      const res = await fetch(`${API_BASE_URL}/api/v1/study`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1328,7 +1330,7 @@ export default function Dashboard() {
                                 <td className="p-4">
                                   <div className="flex gap-2 justify-center">
                                     <a
-                                      href={`http://localhost:5000${file.fileUrl}`}
+                                      href={`${API_BASE_URL}${file.fileUrl}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-850 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 transition-all active:scale-90"
@@ -1870,7 +1872,7 @@ export default function Dashboard() {
                         <h4 className="font-bold text-sm">Local Server Logs</h4>
                         <p className="text-[10px] text-slate-450 font-semibold">Server instance API root target location</p>
                       </div>
-                      <span className="text-xs font-extrabold text-slate-400">http://localhost:5000</span>
+                      <span className="text-xs font-extrabold text-slate-400">{API_BASE_URL}</span>
                     </div>
                   </div>
                 </div>
