@@ -62,8 +62,12 @@ export const uploadFile = async (req: AuthenticatedRequest, res: Response) => {
 
     // Broadcast socket event
     const io = req.app.get('io');
-    if (io) {
-      io.to(projectId).emit('file-uploaded', projectFile);
+    if (io) {   
+      io.to(projectId).emit('file-uploaded', {
+      ...projectFile,
+      fileSize: projectFile.fileSize.toString()
+    });
+
     }
 
     // Convert BigInt to string for JSON serialization
