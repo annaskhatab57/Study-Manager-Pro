@@ -67,9 +67,6 @@ io.to(projectId).emit('file-uploaded', {
   ...projectFile,
   fileSize: projectFile.fileSize?.toString() ?? null
 });
-
-    });
-
     }
 
     // Convert BigInt to string for JSON serialization
